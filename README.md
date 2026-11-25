@@ -2,6 +2,8 @@
 
 **English** · [Español](README.es.md)
 
+To check out and download the latest release, see [RELEASE](https://github.com/obsoletdesigner-dot/runout/releases)
+
 A metadata editor for audio masters that **never touches the audio**. It reads and edits WAV, AIFF, FLAC, MP3, M4A (AAC or ALAC), Ogg Vorbis and Opus files (see [Supported formats](#supported-formats)).
 
 In WAV files it writes every metadata layer at once:
