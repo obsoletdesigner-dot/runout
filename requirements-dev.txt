@@ -1,0 +1,4 @@
+-r requirements.txt
+pytest>=7
+pyinstaller>=6.3
+lxml>=5   # solo para validar el axml contra el esquema EBUCore en las pruebas

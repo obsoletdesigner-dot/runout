@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# PyInstaller
+build/
+dist/
+
+# Pruebas y herramientas
+.pytest_cache/
+tests/.schemas/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# Audio y salidas de la app (nunca subir másters ni carátulas de clientes)
+*.wav
+*.WAV
+*.w64
+*.rf64
+tagged/
+runout.log
+folder.jpg
+
+# Sistema y editores
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/
+*.swp
