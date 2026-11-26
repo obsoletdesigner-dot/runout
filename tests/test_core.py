@@ -365,3 +365,18 @@ def test_export_from_tagged_copy_updates_same_copy(wavs):
     assert writer.export_path(dest) == dest          # no tagged/tagged/
     assert writer.save_track(dest, meta_for(dest, title="Otro"), dest=writer.export_path(dest)).ok
     assert read_track(dest)[0].title == "Otro"
+
+
+def test_no_id3_chunk_with_only_the_length(tmp_path):
+    """Un WAV sin datos para ID3 no gana un chunk id3 que solo lleva TLEN."""
+    from make_test_wavs import chunk, fmt_chunk, pcm, riff
+    p = tmp_path / "plain.wav"
+    p.write_bytes(riff([fmt_chunk(), chunk(b"data", pcm(5000, 9))]))
+    meta, _ = read_track(str(p))
+    meta.set("bext_description", "Solo bext")
+    res = writer.save_track(str(p), meta)
+    assert res.ok, res.message
+    info = parse(str(p))
+    assert not info.id3_chunks()
+    assert info.first(b"bext") is not None
+    assert not read_track(str(p))[1].has_id3

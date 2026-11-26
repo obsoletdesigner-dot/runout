@@ -110,9 +110,10 @@ def build_plan(path: str, meta: TrackMetadata, id3_version: int = 3,
     new_info = listinfo.build(read_chunk_bytes(path, infos[0]) if infos else None, meta, info_encoding)
 
     old_id3 = read_chunk_bytes(path, id3s[0]) if id3s else None
-    new_id3 = id3chunk.build(old_id3, meta, id3_version, _length_ms(path, info))
-    if len(new_id3) <= 10 and not id3s:
-        new_id3 = None  # etiqueta vacía: no se crea
+    if not id3s and len(id3chunk.build(None, meta, id3_version)) <= 10:
+        new_id3 = None  # sin datos para ID3: no se crea una etiqueta solo con la duración (TLEN)
+    else:
+        new_id3 = id3chunk.build(old_id3, meta, id3_version, _length_ms(path, info))
 
     old_axml = read_chunk_bytes(path, axmls[0]) if axmls else None
     new_axml, drop_axml, note = axml.plan(old_axml, meta)
