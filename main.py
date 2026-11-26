@@ -26,8 +26,11 @@ def main() -> int:
             app.installTranslator(qt_translator)
     theme.apply(app, prefs.theme)
     win = MainWindow()
-    if len(sys.argv) > 1:
-        win.add_paths(sys.argv[1:])
+    # app.arguments() ya no lleva las opciones propias de Qt (-style, -platform...),
+    # que PySide6 deja en sys.argv
+    paths = app.arguments()[1:]
+    if paths:
+        win.add_paths(paths)
     win.show()
     return app.exec()
 
