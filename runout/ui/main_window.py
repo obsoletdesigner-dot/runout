@@ -288,8 +288,8 @@ class MainWindow(QMainWindow):
         for folder in unreadable:
             self._log(tr("Cannot read the folder %s") % folder)
         if not wavs:
-            self._log(tr("No supported audio files found in what you dropped."))
-            self._status(tr("No supported audio files found in what you dropped."))
+            self._log(tr("No supported audio files found."))
+            self._status(tr("No supported audio files found."))
             return
         added = self.model.add_paths(wavs)
         self._log(tr("Loaded %d files (%d were already in the list).") % (len(added), len(wavs) - len(added)))

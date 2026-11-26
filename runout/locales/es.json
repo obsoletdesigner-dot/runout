@@ -193,7 +193,6 @@
   "No audio (mdat) found in the MP4 file.": "No se encuentra el audio (mdat) en el archivo MP4.",
   "No changes": "Sin cambios",
   "No loaded track for: ": "Sin pista cargada: ",
-  "No supported audio files found in what you dropped.": "No hay archivos de audio compatibles en lo que has soltado.",
   "No track selected": "Ninguna pista seleccionada",
   "Non-RIFF data after the last chunk (%d bytes); it will be dropped on save.": "Datos no RIFF detrás del último chunk (%d bytes); se descartarán al guardar.",
   "Not a FLAC file.": "No es un archivo FLAC.",
@@ -387,5 +386,6 @@
   "Are you sure? %d files will be overwritten.": "¿Seguro? Se van a sobrescribir %d archivos.",
   "Cannot read the folder %s": "No se puede leer la carpeta %s",
   "Unexpected error:": "Error inesperado:",
-  "Unexpected error (details in the Log)": "Error inesperado (detalle en Registro)"
+  "Unexpected error (details in the Log)": "Error inesperado (detalle en Registro)",
+  "No supported audio files found.": "No se han encontrado archivos de audio compatibles."
 }
