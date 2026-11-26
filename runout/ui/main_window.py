@@ -11,7 +11,7 @@ from PySide6.QtWidgets import (QApplication, QButtonGroup, QDockWidget, QFileDia
                                QVBoxLayout, QWidget)
 
 from .. import APP_NAME
-from ..core import formats
+from ..core import formats, writer
 from ..core.csv_import import parse_csv
 from ..i18n import tr, tr_n
 from . import theme
@@ -363,6 +363,35 @@ class MainWindow(QMainWindow):
         self._status(tr("CSV imported: %d tracks updated") % len(matched))
 
     # --- guardado ------------------------------------------------------------
+    def _confirm_in_place_export(self, entries) -> bool:
+        """Files already inside a tagged/ folder are re-exported in place, which
+        overwrites them. Ask twice before doing that."""
+        in_place = [e for e in entries
+                    if writer.export_path(e.path) == os.path.abspath(e.path)]
+        if not in_place:
+            return True
+        names = [os.path.basename(e.path) for e in in_place]
+        listed = "\n".join("· " + n for n in names[:10])
+        if len(names) > 10:
+            listed += "\n" + tr("…and %d more") % (len(names) - 10)
+        n = len(in_place)
+        first = QMessageBox.warning(
+            self, tr("Overwrite files"),
+            tr_n("%d file is already in a tagged/ folder, so exporting will overwrite it "
+                 "instead of making a new copy:",
+                 "%d files are already in a tagged/ folder, so exporting will overwrite them "
+                 "instead of making new copies:", n) % n
+            + "\n\n" + listed + "\n\n" + tr("Overwrite them?"),
+            QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        if first != QMessageBox.Yes:
+            return False
+        second = QMessageBox.warning(
+            self, tr("Overwrite files"),
+            tr_n("Are you sure? %d file will be overwritten.",
+                 "Are you sure? %d files will be overwritten.", n) % n,
+            QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        return second == QMessageBox.Yes
+
     def save(self):
         export = self.rb_export.isChecked()
         id3_version = self.prefs.id3_version
@@ -393,6 +422,8 @@ class MainWindow(QMainWindow):
                 tr("%d original files will be modified.\n\nThe audio is not touched: each file is "
                    "first written to a temporary file and only replaced if the SHA-256 of the data "
                    "chunk matches exactly.\n\nContinue?") % len(candidates)) != QMessageBox.Yes:
+            return
+        if export and not self._confirm_in_place_export([e for _, e in candidates]):
             return
 
         jobs = [(r, e.path, e.pending.copy()) for r, e in candidates]

@@ -377,5 +377,12 @@
   "“%s” is not an existing ISO 639-3 code.": "«%s» no es un código ISO 639-3 existente.",
   "Exported to tagged/ (audio verified)": "Exportado a tagged/ (audio verificado)",
   "Saved (audio verified)": "Guardado (audio verificado)",
-  "Image": "Imagen"
+  "Image": "Imagen",
+  "Overwrite files": "Sobrescribir archivos",
+  "…and %d more": "…y %d más",
+  "%d file is already in a tagged/ folder, so exporting will overwrite it instead of making a new copy:": "%d archivo ya está en una carpeta tagged/, así que al exportar se sobrescribirá en lugar de crear una copia nueva:",
+  "%d files are already in a tagged/ folder, so exporting will overwrite them instead of making new copies:": "%d archivos ya están en una carpeta tagged/, así que al exportar se sobrescribirán en lugar de crear copias nuevas:",
+  "Overwrite them?": "¿Sobrescribirlos?",
+  "Are you sure? %d file will be overwritten.": "¿Seguro? Se va a sobrescribir %d archivo.",
+  "Are you sure? %d files will be overwritten.": "¿Seguro? Se van a sobrescribir %d archivos."
 }
