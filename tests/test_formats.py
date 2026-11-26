@@ -212,3 +212,30 @@ def test_flac_rejects_missing_streaminfo(tmp_path):
     path.write_bytes(b"fLaC" + bytes([0x81, 0, 0, 0]))
     with pytest.raises(FormatError):
         flac.parse(str(path))
+
+
+def test_dates_with_time_from_other_tools_do_not_block_saving(tmp_path):
+    """MP3 con TDRC '2024-01-01 10:00:00' e iTunes con ©day '2014-05-19T07:00:00Z':
+    al leerlos, la fecha se queda en la forma que acepta el validador."""
+    from mutagen.id3 import ID3, TDRC
+    from mutagen.mp4 import MP4
+    from runout.core.validators import validate_values
+
+    mp3 = tmp_path / "a.mp3"
+    shutil.copy(os.path.join(FIXTURES, "sample.mp3"), mp3)
+    tag = ID3()
+    tag.add(TDRC(encoding=3, text=["2024-01-01 10:00:00"]))
+    tag.save(str(mp3))
+    m4a = tmp_path / "b.m4a"
+    shutil.copy(os.path.join(FIXTURES, "sample.m4a"), m4a)
+    mp4 = MP4(str(m4a))
+    mp4["\xa9day"] = ["2014-05-19T07:00:00Z"]
+    mp4.save()
+
+    for path, date in ((mp3, "2024-01-01"), (m4a, "2014-05-19")):
+        meta, status = formats.read_track(str(path))
+        assert not status.error
+        assert meta.get("date") == date
+        assert "date" not in validate_values(meta.values)
+        res = formats.save_track(str(path), meta)
+        assert res.ok, res.message

@@ -109,6 +109,37 @@ def _number(value: str) -> float | None:
 
 
 # ----------------------------------------------------------------------------------
+DATE_KINDS = ("date", "datetime", "isodate", "isotime")
+
+_ANY_DATE = re.compile(r"(\d{4})(?:[-/.:](\d{2})(?:[-/.:](\d{2}))?)?(?:[T ].*)?")
+_ANY_DATETIME = re.compile(r"(\d{4})[-/.:](\d{2})[-/.:](\d{2})[T ](\d{2}):(\d{2})(?::(\d{2}))?"
+                           r"(?:\.\d+)?(?:Z|[+-]\d{2}:?\d{2})?")
+# EBU Tech 3285 admite '-', '_', ':', ' ' y '.' como separadores en la fecha y la hora del bext
+_ANY_ISODATE = re.compile(r"(\d{4})[-_:. /](\d{2})[-_:. /](\d{2})")
+_ANY_ISOTIME = re.compile(r"(\d{2})[-_:. ](\d{2})[-_:. ](\d{2})")
+
+
+def _normalize_date(kind: str, v: str) -> str:
+    """Lleva a la forma que acepta el validador las fechas que escriben otros programas
+    (con hora, zona horaria u otros separadores). Lo que no se reconoce se deja igual."""
+    if kind == "datetime":
+        m = _ANY_DATETIME.fullmatch(v)
+        if m:
+            y, mo, d, h, mi, sec = m.groups()
+            return "%s-%s-%sT%s:%s%s" % (y, mo, d, h, mi, ":" + sec if sec else "")
+        kind = "date"
+    if kind == "date":
+        m = _ANY_DATE.fullmatch(v)
+        return "-".join(p for p in m.groups() if p) if m else v
+    if kind == "isodate":
+        m = _ANY_ISODATE.fullmatch(v)
+        return "-".join(m.groups()) if m else v
+    if kind == "isotime":
+        m = _ANY_ISOTIME.fullmatch(v)
+        return ":".join(m.groups()) if m else v
+    return v
+
+
 def normalize(field: Field | str, value: str) -> str:
     f = BY_KEY[field] if isinstance(field, str) else field
     if value is None:
@@ -145,6 +176,8 @@ def normalize(field: Field | str, value: str) -> str:
         return v.replace(",", ".")
     if k == "uuid":
         return v.lower()
+    if k in DATE_KINDS:
+        return _normalize_date(k, v)
     if k in ("oneline", "text", "ascii"):
         return " ".join(v.split()) if k != "ascii" else v
     return v

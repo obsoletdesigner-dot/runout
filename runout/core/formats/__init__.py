@@ -9,7 +9,9 @@ from __future__ import annotations
 import os
 
 from ...i18n import tr
+from ..fields import BY_KEY
 from ..model import FileStatus, TrackMetadata
+from ..validators import DATE_KINDS, normalize
 from ..writer import SaveResult
 from .base import FormatError, Handler, SaveOptions
 from .flac import FlacHandler
@@ -49,10 +51,21 @@ def read_track(path: str) -> tuple[TrackMetadata, FileStatus]:
         status.error = tr("Unsupported format.")
         return TrackMetadata(), status
     meta, status = handler.read(path)
+    _normalize_dates(meta)
     if meta.track is None:
         from ..reader import track_from_filename
         meta.set("track", track_from_filename(path))
     return meta, status
+
+
+def _normalize_dates(meta: TrackMetadata) -> None:
+    """Las fechas que escriben otros programas (con hora, zona horaria u otros
+    separadores) se pasan a la forma que acepta el validador, para que un archivo
+    recién leído nunca bloquee el guardado por su propia fecha."""
+    for key, value in list(meta.values.items()):
+        f = BY_KEY.get(key)
+        if f is not None and f.kind in DATE_KINDS and value:
+            meta.set(key, normalize(f, value))
 
 
 def save_track(src: str, meta: TrackMetadata, dest: str | None = None,
