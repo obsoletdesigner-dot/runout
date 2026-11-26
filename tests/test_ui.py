@@ -78,3 +78,20 @@ def test_drop_is_ignored_while_saving(window, tmp_path):
     window._thread = None
     window.dropEvent(ev)
     assert len(window.model.entries) == 1
+
+
+def test_save_summary_counts_only_this_batch(window, tmp_path, monkeypatch):
+    from PySide6.QtWidgets import QMessageBox
+    monkeypatch.setattr(QMessageBox, "warning", lambda *a, **k: QMessageBox.Ok)
+    a = _copy(tmp_path, "sample.flac", "a.flac")
+    b = _copy(tmp_path, "sample.flac", "b.flac")
+    window.model.add_paths([a, b])
+    first, second = window.model.entries
+    first.result_ok = True                 # guardada en un lote anterior
+
+    window._job_entries = [second]
+    window._batch_ok = window._batch_bad = 0
+    window._export_mode = False
+    window._on_track_done(0, True, "ok", second.path, [])
+    window._on_save_finished()
+    assert window.statusBar().currentMessage().startswith("1 ")

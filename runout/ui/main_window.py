@@ -47,6 +47,7 @@ class MainWindow(QMainWindow):
         self.prefs = Preferences(self.settings)
         self._thread: QThread | None = None
         self._job_entries: list = []
+        self._batch_ok = self._batch_bad = 0      # resultados del guardado en curso
         self._worker: SaveWorker | None = None
 
         self.model = TrackTableModel(self)
@@ -437,6 +438,7 @@ class MainWindow(QMainWindow):
         # cada trabajo se identifica por su posición en esta lista, no por la fila
         # de la tabla: las filas pueden moverse mientras se guarda
         self._job_entries = [e for _, e in candidates]
+        self._batch_ok = self._batch_bad = 0
         jobs = [(i, e.path, e.pending.copy()) for i, e in enumerate(self._job_entries)]
         self._export_mode = export
         self._log(tr("Saving %d files (%s, ID3v2.%d)…") % (
@@ -468,6 +470,10 @@ class MainWindow(QMainWindow):
 
     def _on_track_done(self, job: int, ok: bool, message: str, dest: str, warnings: list):
         e = self._job_entries[job]
+        if ok:
+            self._batch_ok += 1
+        else:
+            self._batch_bad += 1
         row = next((r for r, x in enumerate(self.model.entries) if x is e), None)
         if row is None:
             return
@@ -497,8 +503,7 @@ class MainWindow(QMainWindow):
 
     def _on_save_finished(self):
         self._set_busy(False)
-        ok = sum(1 for e in self.model.entries if e.result_ok)
-        bad = sum(1 for e in self.model.entries if e.result_ok is False)
+        ok, bad = self._batch_ok, self._batch_bad
         self._log(tr("Finished: %d OK, %d with errors.") % (ok, bad))
         done = (tr("%d exported") if self._export_mode else tr("%d saved")) % ok
         if bad:
