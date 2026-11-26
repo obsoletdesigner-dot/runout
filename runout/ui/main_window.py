@@ -46,6 +46,7 @@ class MainWindow(QMainWindow):
         self.settings = QSettings("Runout", APP_NAME)
         self.prefs = Preferences(self.settings)
         self._thread: QThread | None = None
+        self._job_entries: list = []
         self._worker: SaveWorker | None = None
 
         self.model = TrackTableModel(self)
@@ -257,10 +258,17 @@ class MainWindow(QMainWindow):
 
     # --- carga -----------------------------------------------------------------
     def dragEnterEvent(self, event):
-        if event.mimeData().hasUrls():
+        if self._thread is None and event.mimeData().hasUrls():
             event.acceptProposedAction()
 
+    def dragMoveEvent(self, event):
+        if self._thread is not None:
+            event.ignore()
+
     def dropEvent(self, event):
+        if self._thread is not None:      # no se añaden pistas mientras se guarda
+            event.ignore()
+            return
         paths = [u.toLocalFile() for u in event.mimeData().urls() if u.isLocalFile()]
         self.add_paths(paths)
 
@@ -364,8 +372,8 @@ class MainWindow(QMainWindow):
 
     # --- guardado ------------------------------------------------------------
     def _confirm_in_place_export(self, entries) -> bool:
-        """Files already inside a tagged/ folder are re-exported in place, which
-        overwrites them. Ask twice before doing that."""
+        """Los archivos que ya están en una carpeta tagged/ se reexportan en su sitio,
+        es decir, se sobrescriben. Se pide confirmación dos veces."""
         in_place = [e for e in entries
                     if writer.export_path(e.path) == os.path.abspath(e.path)]
         if not in_place:
@@ -426,7 +434,10 @@ class MainWindow(QMainWindow):
         if export and not self._confirm_in_place_export([e for _, e in candidates]):
             return
 
-        jobs = [(r, e.path, e.pending.copy()) for r, e in candidates]
+        # cada trabajo se identifica por su posición en esta lista, no por la fila
+        # de la tabla: las filas pueden moverse mientras se guarda
+        self._job_entries = [e for _, e in candidates]
+        jobs = [(i, e.path, e.pending.copy()) for i, e in enumerate(self._job_entries)]
         self._export_mode = export
         self._log(tr("Saving %d files (%s, ID3v2.%d)…") % (
             len(jobs), tr("export to /tagged") if export else tr("overwrite"), id3_version))
@@ -455,10 +466,11 @@ class MainWindow(QMainWindow):
         self.progress.setRange(0, max(total, 1))
         self.progress.setValue(0)
 
-    def _on_track_done(self, row: int, ok: bool, message: str, dest: str, warnings: list):
-        if row >= len(self.model.entries):
+    def _on_track_done(self, job: int, ok: bool, message: str, dest: str, warnings: list):
+        e = self._job_entries[job]
+        row = next((r for r, x in enumerate(self.model.entries) if x is e), None)
+        if row is None:
             return
-        e = self.model.entries[row]
         name = os.path.basename(e.path)
         base = os.path.dirname(e.path)
         if os.path.basename(base).lower() == "tagged":
@@ -499,6 +511,7 @@ class MainWindow(QMainWindow):
                                                    "have not been modified. See the log.") % bad)
         self._thread = None
         self._worker = None
+        self._job_entries = []
         self._update_save_button()
         self.model.drop_duplicate_paths()
         self.model.refresh_all()

@@ -12,7 +12,7 @@ from ..i18n import tr
 
 class SaveWorker(QObject):
     progress = Signal(int, int)                 # hechos, total
-    track_done = Signal(int, bool, str, str, list)   # fila, ok, mensaje, destino, avisos
+    track_done = Signal(int, bool, str, str, list)   # trabajo, ok, mensaje, destino, avisos
     finished = Signal()
 
     def __init__(self, jobs: list[tuple[int, str, TrackMetadata]], export: bool,
@@ -30,7 +30,7 @@ class SaveWorker(QObject):
     @Slot()
     def run(self):
         total = len(self.jobs)
-        for done, (row, path, meta) in enumerate(self.jobs, start=1):
+        for done, (job, path, meta) in enumerate(self.jobs, start=1):
             if self._cancel:
                 break
             dest = writer.export_path(path) if self.export else None
@@ -44,8 +44,8 @@ class SaveWorker(QObject):
                                             % os.path.relpath(art, os.path.dirname(path)))
                     except Exception as exc:  # la portada externa nunca bloquea el guardado
                         res.warnings.append(tr("Could not save folder.jpg: %s") % exc)
-                self.track_done.emit(row, res.ok, res.message, res.dest, res.warnings)
+                self.track_done.emit(job, res.ok, res.message, res.dest, res.warnings)
             except Exception as exc:  # nunca dejar el hilo colgado
-                self.track_done.emit(row, False, tr("Unexpected error: %s") % exc, "", [])
+                self.track_done.emit(job, False, tr("Unexpected error: %s") % exc, "", [])
             self.progress.emit(done, total)
         self.finished.emit()
