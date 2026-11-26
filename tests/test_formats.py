@@ -239,3 +239,51 @@ def test_dates_with_time_from_other_tools_do_not_block_saving(tmp_path):
         assert "date" not in validate_values(meta.values)
         res = formats.save_track(str(path), meta)
         assert res.ok, res.message
+
+
+def _add_other_picture(path):
+    """Imagen de tipo 0 («otra») escrita con mutagen, como hacen algunos programas."""
+    import base64
+    from mutagen.flac import FLAC, Picture as MPicture
+    from mutagen.id3 import APIC, ID3
+    pic = MPicture()
+    pic.type, pic.mime, pic.desc, pic.data = 0, "image/png", "", PNG
+    if path.endswith(".mp3"):
+        tag = ID3()
+        tag.add(APIC(encoding=3, mime="image/png", type=0, desc="", data=PNG))
+        tag.save(path)
+    elif path.endswith(".flac"):
+        f = FLAC(path)
+        f.add_picture(pic)
+        f.save()
+    else:
+        f = mutagen.File(path)
+        f["METADATA_BLOCK_PICTURE"] = [base64.b64encode(pic.write()).decode("ascii")]
+        f.save()
+
+
+def _pictures_in_file(path):
+    f = mutagen.File(path)
+    if path.endswith(".mp3"):
+        return len(f.tags.getall("APIC")) if f.tags else 0
+    if path.endswith(".flac"):
+        return len(f.pictures)
+    return len((f.tags or {}).get("METADATA_BLOCK_PICTURE", []))
+
+
+@pytest.mark.parametrize("name", ["sample.mp3", "sample.flac", "sample.ogg", "sample.opus"])
+def test_other_type_picture_shown_as_cover_is_not_duplicated(tmp_path, name):
+    path = str(tmp_path / name)
+    shutil.copy(os.path.join(FIXTURES, name), path)
+    _add_other_picture(path)
+
+    meta, _ = formats.read_track(path)
+    assert meta.pictures[3].data == PNG
+    assert formats.save_track(path, meta).ok
+    assert _pictures_in_file(path) == 1          # la portada, sin copia de tipo 0
+
+    meta, _ = formats.read_track(path)
+    meta.pictures.clear()                        # el usuario quita la portada
+    assert formats.save_track(path, meta).ok
+    assert _pictures_in_file(path) == 0
+    assert 3 not in formats.read_track(path)[0].pictures

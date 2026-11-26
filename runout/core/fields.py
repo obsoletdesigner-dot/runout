@@ -201,6 +201,20 @@ PICTURE_TYPES: dict[int, str] = {
     20: "Label logo",
 }
 
+
+def pictures_to_keep(pictures: list, type_of) -> list:
+    """Imágenes que se conservan tal cual al guardar: las de tipos que la app no gestiona.
+
+    Si el archivo no tiene ninguna de los tipos gestionados, la primera se lee como
+    portada (ver la lectura de cada formato). Esa ya está en meta.pictures[3], así que
+    no se conserva aparte: si se conservara, la portada quedaría duplicada y no se
+    podría quitar.
+    """
+    others = [p for p in pictures if type_of(p) not in PICTURE_TYPES]
+    if others and len(others) == len(pictures):
+        return others[1:]
+    return others
+
 # Frames ID3 que la app gestiona por otras vías
 SPECIAL_ID3 = {"TRCK", "TPOS", "APIC", "TLEN", "COMM", "USLT", "TXXX"}
 

@@ -15,7 +15,7 @@ from mutagen._vorbis import VComment
 from mutagen.flac import Picture as FlacPicture
 
 from ...i18n import tr
-from ..fields import PICTURE_TYPES
+from ..fields import PICTURE_TYPES, pictures_to_keep
 from ..model import FileStatus, TrackMetadata
 from . import vorbis
 from .base import FormatError, Handler, SaveOptions, copy_range, hash_range, read_safely
@@ -109,8 +109,8 @@ class FlacHandler(Handler):
         blocks, audio_start, _ = parse(src)
         vendor, existing = _comments(blocks)
         keep = [b for b in blocks[1:] if b.type not in (PADDING, VORBIS_COMMENT, PICTURE)]
-        kept_pics = [b for b in blocks if b.type == PICTURE
-                     and FlacPicture(b.data).type not in self.picture_types]
+        kept_pics = pictures_to_keep([b for b in blocks if b.type == PICTURE],
+                                     lambda b: FlacPicture(b.data).type)
 
         vc = VComment()
         vc.vendor = vendor or "reference libFLAC"

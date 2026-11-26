@@ -17,7 +17,7 @@ from mutagen.oggopus import OggOpus
 from mutagen.oggvorbis import OggVorbis
 
 from ...i18n import tr
-from ..fields import PICTURE_TYPES
+from ..fields import PICTURE_TYPES, pictures_to_keep
 from ..model import FileStatus, TrackMetadata
 from . import vorbis
 from .base import FormatError, Handler, SaveOptions, read_safely
@@ -111,8 +111,7 @@ class OggHandler(Handler):
         shutil.copyfile(src, tmp)
         audio, _ = self._open(tmp)
         existing = list(audio.tags or [])
-        kept_pics = [p for p in vorbis.pictures_from_comments(existing)
-                     if p.type not in self.picture_types]
+        kept_pics = pictures_to_keep(vorbis.pictures_from_comments(existing), lambda p: p.type)
         new = vorbis.build(existing, meta)
         new += [vorbis.picture_comment(p) for p in kept_pics]
         for ptype, pic in sorted(meta.pictures.items()):
