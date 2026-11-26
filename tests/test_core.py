@@ -300,6 +300,16 @@ def test_csv(tmp_path):
     assert rows[0].titulo == "Canción"
 
 
+
+def test_csv_with_infinite_track_number(tmp_path):
+    p = tmp_path / "inf.csv"
+    p.write_text("pista;titulo;isrc\ninf;Uno;ESABC2600001\n1e400;Dos;ESABC2600002\n"
+                 "3;Tres;ESABC2600003\n", encoding="utf-8")
+    rows, warns = parse_csv(str(p))
+    assert [r.pista for r in rows] == [3]
+    assert len(warns) == 2
+
+
 # --- regresiones de las pruebas en Windows (2026-11-25) ------------------------
 
 NS0_AXML = (b'<?xml version="1.0" encoding="UTF-8"?>\r\n'

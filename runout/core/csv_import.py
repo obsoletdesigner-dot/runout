@@ -72,7 +72,7 @@ def parse_csv(path: str) -> tuple[list[CsvRow], list[str]]:
         raw_num = cell("pista").split("/")[0].strip()
         try:
             num = int(float(raw_num))
-        except ValueError:
+        except (ValueError, OverflowError):   # OverflowError: 'inf', '1e400'...
             warnings.append(tr("Line %d: invalid track number (%r).") % (line_no, raw_num))
             continue
         rows.append(CsvRow(pista=num, titulo=cell("titulo"), isrc=clean_isrc(cell("isrc")),
