@@ -1,4 +1,4 @@
-"""Punto de entrada: python main.py [archivos o carpetas WAV...]"""
+"""Punto de entrada: python main.py [archivos de audio o carpetas...]"""
 import sys
 
 from PySide6.QtCore import QLibraryInfo, QSettings, QTranslator
