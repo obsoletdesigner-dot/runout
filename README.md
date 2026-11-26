@@ -6,6 +6,8 @@ To check out and download the latest release, see [RELEASE](https://github.com/o
 
 A metadata editor for audio masters that **never touches the audio**. It reads and edits WAV, AIFF, FLAC, MP3, M4A (AAC or ALAC), Ogg Vorbis and Opus files (see [Supported formats](#supported-formats)).
 
+<img width="1322" height="832" alt="Captura de pantalla 2026-11-26 130524" src="https://github.com/user-attachments/assets/5f9b145f-c23c-41c2-931c-bb1d9ea2e402" />
+
 In WAV files it writes every metadata layer at once:
 
 - `id3 ` (ID3v2.3 by default, or v2.4): all text frames, credits, dates, sort orders, URLs, `COMM`, `USLT`, industry-standard `TXXX` frames (catalogue number, UPC/EAN, ISWC, release country, type and status, ReplayGain, MusicBrainz) and free `TXXX` fields. Four images are supported: front cover, back cover, artist photo and label logo. `TLEN` is computed from the audio. In v2.3, frames that only exist in v2.4 (`TMOO`, `TPRO`, `TSST`, `TDRL`, `TDEN`, `TDTG`) are stored as `TXXX`, the same way MusicBrainz Picard does it.
