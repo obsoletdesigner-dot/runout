@@ -385,5 +385,7 @@
   "Overwrite them?": "¿Sobrescribirlos?",
   "Are you sure? %d file will be overwritten.": "¿Seguro? Se va a sobrescribir %d archivo.",
   "Are you sure? %d files will be overwritten.": "¿Seguro? Se van a sobrescribir %d archivos.",
-  "Cannot read the folder %s": "No se puede leer la carpeta %s"
+  "Cannot read the folder %s": "No se puede leer la carpeta %s",
+  "Unexpected error:": "Error inesperado:",
+  "Unexpected error (details in the Log)": "Error inesperado (detalle en Registro)"
 }

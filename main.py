@@ -7,6 +7,7 @@ from PySide6.QtWidgets import QApplication
 from runout import APP_NAME
 from runout.i18n import set_language
 from runout.ui import theme
+from runout.ui.errors import install_excepthook
 from runout.ui.icons import app_icon
 from runout.ui.main_window import MainWindow
 from runout.ui.preferences import Preferences
@@ -26,6 +27,7 @@ def main() -> int:
             app.installTranslator(qt_translator)
     theme.apply(app, prefs.theme)
     win = MainWindow()
+    install_excepthook(win)
     # app.arguments() ya no lleva las opciones propias de Qt (-style, -platform...),
     # que PySide6 deja en sys.argv
     paths = app.arguments()[1:]

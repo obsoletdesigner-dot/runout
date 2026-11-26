@@ -117,3 +117,19 @@ def test_last_folder_is_absolute_for_relative_paths(window, tmp_path, monkeypatc
     monkeypatch.chdir(tmp_path)
     window.add_paths(["a.flac"])
     assert window.settings.value("last_dir") == str(tmp_path)
+
+
+def test_unexpected_errors_go_to_the_log(window, monkeypatch):
+    from PySide6.QtCore import QTimer
+    from runout.ui.errors import install_excepthook
+    monkeypatch.setattr(sys, "excepthook", sys.excepthook)   # se restaura al acabar
+    install_excepthook(window)
+
+    def broken_slot():
+        raise RuntimeError("boom")
+    QTimer.singleShot(0, broken_slot)                         # error dentro de un slot de Qt
+    QApplication.processEvents()
+
+    log = window.log.toPlainText()
+    assert "RuntimeError: boom" in log and "broken_slot" in log
+    assert not window.log_dock.isHidden()
