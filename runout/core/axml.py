@@ -216,32 +216,35 @@ def build_full(meta) -> bytes:
     return "\n".join(lines).encode("utf-8")
 
 
+def _parse_keeping_comments(data: bytes) -> ET.Element:
+    parser = ET.XMLParser(target=ET.TreeBuilder(insert_comments=True, insert_pis=True))
+    return ET.fromstring(data, parser=parser)
+
+
+def _canonical(el: ET.Element):
+    """Forma comparable de un árbol: etiquetas, atributos, texto y orden de los hijos."""
+    return (str(el.tag), tuple(sorted(el.attrib.items())), (el.text or "").strip(),
+            tuple(_canonical(c) for c in el))
+
+
 def is_managed(raw: bytes | None) -> bool:
-    """True si el axml solo contiene elementos que la app gestiona (se puede regenerar)."""
+    """True si el axml es exactamente el que la app generaría con sus propios valores.
+
+    Solo entonces se puede regenerar sin perder nada. Cualquier diferencia (varios
+    creadores, otros roles, títulos en varios idiomas, atributos o comentarios de otro
+    programa) lo convierte en axml de terceros, del que solo se actualiza el ISRC.
+    """
     if not raw or not _clean(raw):
         return True
+    data = raw.rstrip(b"\x00")
     try:
-        root = ET.fromstring(raw.rstrip(b"\x00"))
+        root = _parse_keeping_comments(data)
     except ET.ParseError:
         return False
     if _local(root.tag) != "ebuCoreMain":
         return False
-    children = list(root)
-    if any(_local(c.tag) != "coreMetadata" for c in children) or len(children) > 1:
-        return False
-    for core in children:
-        for c in core:
-            if _local(c.tag) not in _MANAGED_CHILDREN:
-                return False
-            if _local(c.tag) == "identifier":
-                texts = [(d.text or "").strip() for d in c if _local(d.tag) == "identifier"]
-                label = (c.get("formatLabel") or "").upper()
-                known = label in ("ISRC", "ISWC", "UPC", "EAN", "CATALOGNUMBER") or any(
-                    t.upper().startswith(("ISRC:", "ISWC:", "UPC:", "EAN:", "CATALOGNUMBER:"))
-                    for t in texts)
-                if not known:
-                    return False
-    return True
+    rebuilt = ET.fromstring(build_full(read_fields(data)))
+    return _canonical(root) == _canonical(rebuilt)
 
 
 def plan(raw: bytes | None, meta) -> tuple[bytes | None, bool, str | None]:
@@ -264,6 +267,26 @@ def plan(raw: bytes | None, meta) -> tuple[bytes | None, bool, str | None]:
         return None, False, str(exc) + tr(" It is kept as is; the ISRC will only go in ID3.")
 
 
+def _performer(root: ET.Element) -> str:
+    """Nombre del creador con rol de intérprete. Si ningún creador indica su rol y
+    solo hay uno, se toma ese; si no, no se adivina."""
+    creators = [c for c in root.iter() if _local(c.tag) == "creator"]
+
+    def name(c):
+        return next(((n.text or "").strip() for n in c.iter()
+                     if _local(n.tag) == "name" and (n.text or "").strip()), "")
+
+    def roles(c):
+        return [(r.get("typeLabel") or "").strip().lower() for r in c.iter() if _local(r.tag) == "role"]
+
+    for c in creators:
+        if "performer" in roles(c) and name(c):
+            return name(c)
+    if len(creators) == 1 and not roles(creators[0]):
+        return name(creators[0])
+    return ""
+
+
 def read_fields(raw: bytes | None) -> dict[str, str]:
     """Valores legibles del axml (para completar lo que no haya en ID3)."""
     out: dict[str, str] = {}
@@ -276,6 +299,9 @@ def read_fields(raw: bytes | None) -> dict[str, str]:
         root = ET.fromstring(raw.rstrip(b"\x00"))
     except ET.ParseError:
         return out
+    artist = _performer(root)
+    if artist:
+        out["artist"] = artist
     for el in root.iter():
         name, ns = _local(el.tag), _ns(el.tag)
         text = (el.text or "").strip()
@@ -283,8 +309,6 @@ def read_fields(raw: bytes | None) -> dict[str, str]:
             continue
         if ns == DC_NS and name == "title":
             out.setdefault("title", text)
-        elif name == "name":
-            out.setdefault("artist", text)
         elif name == "organisationName":
             out.setdefault("label", text)
         elif ns == DC_NS and name == "date":

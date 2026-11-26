@@ -252,6 +252,40 @@ def test_axml_new_is_valid_and_readable():
     assert axml.update(raw, "GBXYZ2600099").count(b"ISRC:") == 1
 
 
+
+TWO_CREATORS = (b'<ebucore:ebuCoreMain xmlns:dc="http://purl.org/dc/elements/1.1/" '
+                b'xmlns:ebucore="urn:ebu:metadata-schema:ebuCore_2012"><ebucore:coreMetadata>'
+                b'<ebucore:creator><ebucore:contactDetails><ebucore:name>Composer Guy</ebucore:name>'
+                b'</ebucore:contactDetails><ebucore:role typeLabel="Composer"/></ebucore:creator>'
+                b'<ebucore:creator><ebucore:contactDetails><ebucore:name>The Band</ebucore:name>'
+                b'</ebucore:contactDetails><ebucore:role typeLabel="Performer"/></ebucore:creator>'
+                b'</ebucore:coreMetadata></ebucore:ebuCoreMain>')
+
+
+def test_axml_from_another_tool_is_not_regenerated():
+    """Varios creadores con roles: no es el axml de la app, así que no se regenera
+    (se perdería el compositor) y el artista es el intérprete, no el primer nombre."""
+    assert not axml.is_managed(TWO_CREATORS)
+    assert axml.read_fields(TWO_CREATORS)["artist"] == "The Band"
+    new, remove, warning = axml.plan(TWO_CREATORS, {"artist": "The Band", "isrc": "ESABC2600001"})
+    assert not remove and warning
+    assert b"Composer Guy" in new and axml.read_isrc(new) == "ESABC2600001"
+
+
+def test_axml_own_output_is_managed():
+    meta = {"title": "Uno & dos", "artist": "Artista", "label": "Sello", "date": "2026-11-25",
+            "isrc": "ESABC2600001", "iswc": "T-123.456.789-0", "barcode": "8435123456786",
+            "catalog": "DEJ-001", "language": "spa", "copyright": "© 2026"}
+    assert axml.is_managed(axml.build_full(meta))
+    assert axml.is_managed(axml.build_new("ESABC2600001"))
+    assert axml.read_fields(axml.build_full(meta)) == meta
+    # con un comentario o un atributo de otro programa deja de ser propio
+    assert not axml.is_managed(axml.build_full(meta).replace(b"</ebucore:coreMetadata>",
+                                                             b"<!-- x --></ebucore:coreMetadata>"))
+    assert not axml.is_managed(axml.build_full(meta).replace(b"<ebucore:title>",
+                                                             b'<ebucore:title typeLabel="main">'))
+
+
 def test_csv(tmp_path):
     p = tmp_path / "a.csv"
     p.write_bytes("﻿Pista;Título;ISRC\n1;Uno;ES-ABC-26-00001\n2;Dos ñ;ESABC2600002\n\n"
