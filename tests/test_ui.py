@@ -1,11 +1,9 @@
 """Ventana principal sin pantalla (Qt offscreen) y con la configuración en un temporal."""
 from __future__ import annotations
 
-import atexit
 import os
 import shutil
 import sys
-import tempfile
 
 import pytest
 
@@ -16,19 +14,17 @@ from PySide6.QtCore import QMimeData, QPointF, Qt, QSettings, QUrl  # noqa: E402
 from PySide6.QtGui import QDropEvent  # noqa: E402
 from PySide6.QtWidgets import QApplication  # noqa: E402
 
-# nunca tocar la configuración real del usuario
-_SETTINGS_DIR = tempfile.mkdtemp(prefix="runout-test-settings-")
-atexit.register(shutil.rmtree, _SETTINGS_DIR, ignore_errors=True)
-QSettings.setPath(QSettings.NativeFormat, QSettings.UserScope, _SETTINGS_DIR)
-QSettings.setPath(QSettings.IniFormat, QSettings.UserScope, _SETTINGS_DIR)
-
 from runout.ui.main_window import MainWindow  # noqa: E402
 
 FIXTURES = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fixtures")
 
 
 @pytest.fixture(scope="module")
-def app():
+def app(tmp_path_factory):
+    # nunca tocar la configuración real del usuario: pytest gestiona y limpia esta carpeta
+    settings_dir = str(tmp_path_factory.mktemp("settings"))
+    QSettings.setPath(QSettings.NativeFormat, QSettings.UserScope, settings_dir)
+    QSettings.setPath(QSettings.IniFormat, QSettings.UserScope, settings_dir)
     return QApplication.instance() or QApplication([])
 
 
