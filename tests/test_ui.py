@@ -110,3 +110,10 @@ def test_unreadable_folder_is_skipped(window, tmp_path):
         locked.chmod(0o755)
     assert [e.path for e in window.model.entries] == [os.path.abspath(ok)]
     assert "locked" in window.log.toPlainText()
+
+
+def test_last_folder_is_absolute_for_relative_paths(window, tmp_path, monkeypatch):
+    _copy(tmp_path, "sample.flac", "a.flac")
+    monkeypatch.chdir(tmp_path)
+    window.add_paths(["a.flac"])
+    assert window.settings.value("last_dir") == str(tmp_path)

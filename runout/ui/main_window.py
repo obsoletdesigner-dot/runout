@@ -305,7 +305,7 @@ class MainWindow(QMainWindow):
                 for w in e.status.warnings:
                     self._log("  ! %s: %s" % (os.path.basename(e.path), w))
         if wavs:
-            self.settings.setValue("last_dir", os.path.dirname(wavs[0]))
+            self.settings.setValue("last_dir", os.path.dirname(os.path.abspath(wavs[0])))
 
     def add_files_dialog(self):
         files, _ = QFileDialog.getOpenFileNames(
