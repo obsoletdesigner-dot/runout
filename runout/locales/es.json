@@ -384,5 +384,6 @@
   "%d files are already in a tagged/ folder, so exporting will overwrite them instead of making new copies:": "%d archivos ya están en una carpeta tagged/, así que al exportar se sobrescribirán en lugar de crear copias nuevas:",
   "Overwrite them?": "¿Sobrescribirlos?",
   "Are you sure? %d file will be overwritten.": "¿Seguro? Se va a sobrescribir %d archivo.",
-  "Are you sure? %d files will be overwritten.": "¿Seguro? Se van a sobrescribir %d archivos."
+  "Are you sure? %d files will be overwritten.": "¿Seguro? Se van a sobrescribir %d archivos.",
+  "Cannot read the folder %s": "No se puede leer la carpeta %s"
 }

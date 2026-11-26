@@ -22,12 +22,21 @@ from .save_worker import SaveWorker
 from .track_table import TrackTableModel, TrackTableView
 
 
-def collect_audio(paths: list[str]) -> list[str]:
-    """Archivos de audio admitidos, sueltos o dentro de carpetas (sin entrar en subcarpetas)."""
+def collect_audio(paths: list[str], unreadable: list[str] | None = None) -> list[str]:
+    """Archivos de audio admitidos, sueltos o dentro de carpetas (sin entrar en subcarpetas).
+
+    Las carpetas que no se pueden leer se saltan y, si se pasa `unreadable`, se apuntan ahí.
+    """
     out = []
     for p in paths:
         if os.path.isdir(p):
-            for name in sorted(os.listdir(p)):
+            try:
+                names = sorted(os.listdir(p))
+            except OSError as exc:
+                if unreadable is not None:
+                    unreadable.append("%s (%s)" % (p, exc.strerror or exc))
+                continue
+            for name in names:
                 full = os.path.join(p, name)
                 if os.path.isfile(full) and formats.is_supported(name) and not name.startswith("."):
                     out.append(full)
@@ -274,7 +283,10 @@ class MainWindow(QMainWindow):
         self.add_paths(paths)
 
     def add_paths(self, paths: list[str]) -> None:
-        wavs = collect_audio(paths)
+        unreadable: list[str] = []
+        wavs = collect_audio(paths, unreadable)
+        for folder in unreadable:
+            self._log(tr("Cannot read the folder %s") % folder)
         if not wavs:
             self._log(tr("No supported audio files found in what you dropped."))
             self._status(tr("No supported audio files found in what you dropped."))

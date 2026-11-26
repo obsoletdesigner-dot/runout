@@ -95,3 +95,18 @@ def test_save_summary_counts_only_this_batch(window, tmp_path, monkeypatch):
     window._on_track_done(0, True, "ok", second.path, [])
     window._on_save_finished()
     assert window.statusBar().currentMessage().startswith("1 ")
+
+
+@pytest.mark.skipif(os.name == "nt" or (hasattr(os, "geteuid") and os.geteuid() == 0),
+                    reason="los permisos POSIX no impiden leer a root ni funcionan igual en Windows")
+def test_unreadable_folder_is_skipped(window, tmp_path):
+    locked = tmp_path / "locked"
+    locked.mkdir()
+    ok = _copy(tmp_path, "sample.flac", "a.flac")
+    locked.chmod(0)
+    try:
+        window.add_paths([str(locked), ok])
+    finally:
+        locked.chmod(0o755)
+    assert [e.path for e in window.model.entries] == [os.path.abspath(ok)]
+    assert "locked" in window.log.toPlainText()
