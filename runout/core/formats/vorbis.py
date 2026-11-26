@@ -9,7 +9,7 @@ import base64
 
 from mutagen.flac import Picture as FlacPicture
 
-from ..fields import PICTURE_TYPES
+from ..fields import PICTURE_TYPES, parse_custom
 from ..model import Picture, TrackMetadata
 
 VORBIS_KEYS: dict[str, tuple[str, ...]] = {
@@ -103,12 +103,9 @@ def build(existing: list[tuple[str, str]], meta: TrackMetadata) -> list[tuple[st
         value = meta.get(field_key)
         if value:
             out.append((keys[0], value))
-    for line in meta.get("custom_txxx").splitlines():
-        if "=" in line:
-            key, value = line.split("=", 1)
-            key = key.strip()
-            if key and key.upper() not in _MANAGED and _valid_key(key):
-                out.append((key, value.strip()))
+    for key, value in parse_custom(meta.get("custom_txxx")):
+        if key.upper() not in _MANAGED and _valid_key(key):
+            out.append((key, value))
     return out
 
 

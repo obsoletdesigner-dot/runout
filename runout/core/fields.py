@@ -202,6 +202,22 @@ PICTURE_TYPES: dict[int, str] = {
 }
 
 
+def parse_custom(text: str) -> list[tuple[str, str]]:
+    """Pares clave=valor del campo «Campos libres».
+
+    Una línea sin '=' continúa el valor de la anterior, así que los valores con saltos
+    de línea (por ejemplo unas notas en un TXXX) se conservan al volver a guardar.
+    """
+    pairs: list[list[str]] = []
+    for line in text.splitlines():
+        if "=" in line:
+            key, value = line.split("=", 1)
+            pairs.append([key.strip(), value])
+        elif pairs:
+            pairs[-1][1] += "\n" + line
+    return [(k, v.strip()) for k, v in pairs if k]
+
+
 def pictures_to_keep(pictures: list, type_of) -> list:
     """Imágenes que se conservan tal cual al guardar: las de tipos que la app no gestiona.
 

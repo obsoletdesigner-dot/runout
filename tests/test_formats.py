@@ -287,3 +287,15 @@ def test_other_type_picture_shown_as_cover_is_not_duplicated(tmp_path, name):
     assert formats.save_track(path, meta).ok
     assert _pictures_in_file(path) == 0
     assert 3 not in formats.read_track(path)[0].pictures
+
+
+def test_multiline_custom_value_survives_saving(sample):
+    """Un valor libre con saltos de línea no se recorta al volver a guardar."""
+    meta, _ = formats.read_track(sample)
+    meta.set("custom_txxx", "NOTAS=línea 1\nlínea 2\nOTRO=x")
+    assert formats.save_track(sample, meta).ok
+    meta, _ = formats.read_track(sample)
+    assert formats.save_track(sample, meta).ok          # segundo guardado, ya leído del archivo
+    custom = formats.read_track(sample)[0].get("custom_txxx").splitlines()
+    assert "NOTAS=línea 1" in custom and custom[custom.index("NOTAS=línea 1") + 1] == "línea 2"
+    assert "OTRO=x" in custom

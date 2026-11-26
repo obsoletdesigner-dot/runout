@@ -16,6 +16,7 @@ import struct
 from mutagen.mp4 import MP4, MP4Cover, MP4FreeForm
 
 from ...i18n import tr
+from ..fields import parse_custom
 from ..model import FileStatus, Picture, TrackMetadata
 from .base import FormatError, Handler, SaveOptions, hash_range, read_safely
 
@@ -174,12 +175,9 @@ class Mp4Handler(Handler):
             num, total = meta.int(num_key), meta.int(total_key)
             if num or total:
                 tags[atom] = [(num or 0, total or 0)]
-        for line in meta.get("custom_txxx").splitlines():
-            if "=" in line:
-                name, value = line.split("=", 1)
-                name = name.strip()
-                if name and name.upper() not in _MANAGED_FREEFORM:
-                    tags[PREFIX + name] = [MP4FreeForm(value.strip().encode("utf-8"))]
+        for name, value in parse_custom(meta.get("custom_txxx")):
+            if name.upper() not in _MANAGED_FREEFORM:
+                tags[PREFIX + name] = [MP4FreeForm(value.encode("utf-8"))]
         cover = meta.pictures.get(3)
         if cover and cover.data:
             fmt = MP4Cover.FORMAT_PNG if cover.mime == "image/png" else MP4Cover.FORMAT_JPEG

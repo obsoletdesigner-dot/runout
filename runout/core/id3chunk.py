@@ -11,7 +11,7 @@ from mutagen.id3 import (APIC, COMM, ID3, TLEN, TPOS, TRCK, TXXX, USLT, WXXX, Fr
                          ID3NoHeaderError)
 from mutagen.id3._util import error as ID3Error
 
-from .fields import FIELDS, PICTURE_TYPES, managed_txxx, pictures_to_keep
+from .fields import FIELDS, PICTURE_TYPES, managed_txxx, parse_custom, pictures_to_keep
 from .model import Picture, TrackMetadata
 
 PICTURE_DESC = {3: "Cover", 4: "Back cover", 8: "Artist", 20: "Label logo"}
@@ -177,11 +177,9 @@ def build(existing_raw: bytes | None, meta: TrackMetadata, version: int = 3,
     managed = managed_txxx()
     for k in [k for k, fr in tag.items() if k.startswith("TXXX:") and fr.desc.upper() not in managed]:
         del tag[k]
-    for line in meta.get("custom_txxx").splitlines():
-        if "=" in line:
-            desc, val = line.split("=", 1)
-            if desc.strip() and desc.strip().upper() not in managed:
-                tag.add(TXXX(encoding=enc, desc=desc.strip(), text=[val.strip()]))
+    for desc, val in parse_custom(meta.get("custom_txxx")):
+        if desc.upper() not in managed:
+            tag.add(TXXX(encoding=enc, desc=desc, text=[val]))
 
     # imágenes: se sustituyen solo los tipos gestionados; las demás se conservan
     keep = pictures_to_keep(tag.getall("APIC"), lambda fr: fr.type)
